@@ -25,22 +25,31 @@
 
 project(PGM_Perspective_VisualServoing)
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 
 find_package(PER REQUIRED per_core per_core_extended per_io per_features per_sensor_pose_estimation per_estimation)
 if(PER_FOUND)
 	include(${PER_USE_FILE})
 endif(PER_FOUND)
 
-# Boost
-FIND_PACKAGE(Boost REQUIRED)
+#IF USE UR10
+find_package(ur_rtde REQUIRED)
 
-include_directories(${Boost_INCLUDE_DIRS}) # /opt/local/include/ might be needed as well under MacOS
-
-link_directories(${Boost_LIBRARY_DIRS}) # /opt/local/lib/ might be needed as well under MacOS # similar /Users/guillaume/Developpement/librairies/visp-3.0.1/build/lib/Release/ might be needed as well under MacOS 
+#IF USE FLIR
+INCLUDE_DIRECTORIES(/usr/include/flycapture)
 
 set(PGMPerspVS_cpp
   PGMPerspVS.cpp
+
+  PGMPerspVS_test.cpp
+)
+
+SET (SRC_SOURCES
+#IF USE UR10
+		src/C_UR.h
+		src/C_UR.cpp
+#IF USE FLIR
+    src/CamFlir.hpp
 )
 
 foreach(cpp ${PGMPerspVS_cpp})
@@ -50,7 +59,10 @@ foreach(cpp ${PGMPerspVS_cpp})
   endif()
 endforeach()
 
-#target_link_libraries(MPPSSDgyroEstim libboost_system-mt.dylib libboost_filesystem-mt.dylib libboost_regex-mt.dylib)
-
-#target_link_libraries(PGMPerspVS libboost_system-mt.so libboost_filesystem-mt.so libboost_regex-mt.so)
+#IF USE UR10 AND/OR FLIR
+target_sources(PGMPerspVS PUBLIC ${SRC_SOURCES})
+#IF USE UR10
+target_link_libraries(PGMPerspVS ur_rtde::rtde)
+#IF USE FLIR
+target_link_libraries(PGMPerspVS -lflycapture)
 
