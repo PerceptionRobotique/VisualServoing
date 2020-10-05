@@ -2,11 +2,15 @@
  \file PGMPerspectiveVisualServoing.cpp
  \brief Photometric Gaussian Mixture (PGM) -based Visual Servoing. SSD compares current and desired PGMs for perpsective camera control (6 DOFs), exploiting PeR core, core_extended, io, features, estimation and sensor_pose_estimation modules
  * example command line :
-./build/PGMPerspVS ./PGM_Perspective_VisualServoing_media/calibration/calib_640_512.xml 6 5.0 1000 10 -10
+./build/PGMPerspVS_levels ./PGM_Perspective_VisualServoing_media/calibration/calib_640_512.xml 6 5.0 1 1000 500 10 -200 5
+or
+./PGMPerspVS_levels ../PGM_Perspective_VisualServoing_media/calibration/calib_640_512.xml 6 5.0 1 1000 500 10 -200 5
  \param xmlFic the perspective camera calibration xml file
  \param redFac the image scale reduction factor
  \param lambda_g the initial Gaussian expansion parameter
+ \param levels the amount PGM-VS sequence relying on levels of lambda_g (1: 1 PGM-VS with lambda_g; 2: 1 PGM-VS with lambda_g + 1 PGM-VS with the minimal lambda_g = 0.34; 3: 1 PGM-VS with lambda_g + 1 PGM-VS with lambda_g/2 + 1 PGM-VS with the minimal lambda_g = 0.34; etc)
  \param metFac the factor to transform shiftX to meters
+ \param sceneDepth the positive depth of the scene at desired pose (in coherent units regarding metFac)
  \param shiftX the signed lateral shift (in coherent units regarding metFac)
  \param shiftZ the signed depth shift (in coherent units regarding metFac)
  \param rotY the signed vertical rotation (in degrees)
@@ -51,6 +55,9 @@
 #include <visp/vpDisplayX.h>
 
 #define INTERPTYPE prInterpType::IMAGEPLANE_BILINEAR
+//#define MIN_LAMBDA_G 0.34
+#define MIN_LAMBDA_G 1.0
+//#define MIN_LAMBDA_G 0.5
 
 #define VERBOSE
 
@@ -129,11 +136,40 @@ int main(int argc, char **argv)
         return -3;
     }
     float lambda_g = atof(argv[3]);//0.35;//0.035;//
+
+  //Get the number of levels of PGM-VS
+  unsigned int levels = 1;
+  if(argc < 5)
+  {
+#ifdef VERBOSE
+      std::cout << "no levels provided" << std::endl;
+#endif
+  }
+  else
+  {
+    levels = atoi(argv[4]);
+
+    // check min value of levels
+    if(levels == 0)
+      levels = 1;
+
+    // check max value of levels
+    unsigned int maxLevels = 2;
+    float lambda_g_test = lambda_g;
+    while(lambda_g_test > 2.0*MIN_LAMBDA_G)
+    {
+      maxLevels++;
+      lambda_g_test *= 0.5;
+    }
+
+    if(levels > maxLevels)
+      levels = maxLevels;
+  }
     
     //Loading the desired image with respect to which servo the camera
     vpImage<unsigned char> I_des, I_cur;
 #ifndef WITHCAMERA
-    if(argc < 5)
+    if(argc < 6)
     {
 #ifdef VERBOSE
         std::cout << "no image files directory path given" << std::endl;
@@ -142,7 +178,7 @@ int main(int argc, char **argv)
     }
 
     //Get filename thanks to boost
-    char *desiredImageFilename = (char *)argv[4];
+    char *desiredImageFilename = (char *)argv[5];
 
     try
     {
@@ -168,7 +204,7 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-140.45);
 	j_init[4] = vpMath::rad(-44.99);
 	j_init[5] = vpMath::rad(-0.2);*/
-
+/*
   //0.5 m depth
 	j_init[0] = vpMath::rad(-43.63);
 	j_init[1] = vpMath::rad(-109.51);
@@ -176,6 +212,7 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-63.91);
 	j_init[4] = vpMath::rad(88.46);
 	j_init[5] = vpMath::rad(92.64);
+*/
 /*
   //0.3 m depth
 	j_init[0] = vpMath::rad(-38.24);
@@ -185,6 +222,14 @@ int main(int argc, char **argv)
 	j_init[4] = vpMath::rad(88.19);
 	j_init[5] = vpMath::rad(97.87);
 */
+//red table
+  //0.25 m depth
+	j_init[0] = vpMath::rad(-118.10);
+	j_init[1] = vpMath::rad(-100.44);
+	j_init[2] = vpMath::rad(-137.12);
+	j_init[3] = vpMath::rad(-30.09);
+	j_init[4] = vpMath::rad(88.61);
+	j_init[5] = vpMath::rad(94.94);
 
   UR10.setCameraArticularPose(j_init);
 
@@ -197,7 +242,7 @@ int main(int argc, char **argv)
     //Parametres intrinseques pour FlirCam
 	  int larg = 640/redFac, haut = 512/redFac;
 
-    CamFlir<unsigned char> grabber(larg,haut,8,0); 
+    CamFlir<unsigned char> grabber(640,512,8,0); 
    
     //Acquisition
     grabber.getFrame(Iacq);
@@ -223,6 +268,19 @@ int main(int argc, char **argv)
   s << "resultat/Id." << FILE_EXT;
   filename = s.str();
   vpImageIo::write(I_des, filename);
+
+  //save the desired pose to file
+  s.str("");
+  s.setf(std::ios::right, std::ios::adjustfield);
+  s << "resultat/desiredPose.txt";
+  filename = s.str();
+  std::ofstream ficDesiredPose(filename.c_str());
+
+  vpColVector p;
+  UR10.getCameraPoseRaw(p);
+  ficDesiredPose << p.t() << std::endl;
+
+  ficDesiredPose.close();
 #endif //INDICATORS
 
     // 2. VS objects initialization, considering the pose control of a perspective camera from the feature set of photometric non-normalized Gaussian mixture 2D samples compared thanks to the SSD
@@ -232,8 +290,8 @@ int main(int argc, char **argv)
                            prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
                            prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
 
-    bool dofs[6] = {true, true, true, true, true, true};
-    //bool dofs[6] = {true, true, true, false, false, true}; // no coupling?
+    //bool dofs[6] = {true, true, true, true, true, true};
+    bool dofs[6] = {true, true, true, false, false, true}; // no coupling?
 
     servo.setdof(dofs[0], dofs[1], dofs[2], dofs[3], dofs[4], dofs[5]);
     
@@ -249,29 +307,56 @@ int main(int argc, char **argv)
     std::cout << "built" << std::endl;
 
 //    IP_des.toAbsZN(); //prepare pixels intensities ? 
+    //prepare the array of desired photometric Gaussian Mixtures (1 per level)
     prRegularlySampledCPImage<float> GP(I_des.getHeight(), I_des.getWidth()); //contient tous les pr2DCartesianPointVec (ou prFeaturePoint) u_g et fera GS_sample.buildFrom(IP_des, u_g);
-    prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage > fSet_des;
-    prPhotometricnnGMS<prCartesian2DPointVec> GP_sample_des(lambda_g);
+    prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage > *fSet_des = new prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >[levels];
 
+    prPhotometricnnGMS<prCartesian2DPointVec> GP_sample_des(lambda_g);
+    //PGM of the highest lambda_g
     double t0;
     t0 = vpTime::measureTimeMs();
-    fSet_des.buildFrom(IP_des, GP, GP_sample_des, false, true); // Goulot !
+    fSet_des[0].buildFrom(IP_des, GP, GP_sample_des, false, true); 
     t0 -= vpTime::measureTimeMs();
-    std::cout << "fSet_des built in: " << -t0 << " ms" << std::endl;
+    std::cout << "fSet_des 0 built in: " << -t0 << " ms" << std::endl;
+
+    //PGM of the intermediary lambda_g (lambda_g/=2)
+    for(unsigned int iLevel = 1 ; iLevel < (levels-1) ; iLevel++)
+    {
+      GP_sample_des.setLambda(0.5*GP_sample_des.getLambda());
+      t0 = vpTime::measureTimeMs();
+      fSet_des[iLevel].buildFrom(IP_des, GP, GP_sample_des, false, true); 
+      t0 -= vpTime::measureTimeMs();
+      std::cout << "fSet_des " << iLevel << " built in: " << -t0 << " ms" << std::endl;
+    }
+
+    //PGM of the smallest possible lambda_g (similar to P only but with analytic gradients)
+    if(levels > 1)
+    {
+      GP_sample_des.setLambda(MIN_LAMBDA_G); //ssi nbSigma == 3
+      t0 = vpTime::measureTimeMs();
+      fSet_des[levels-1].buildFrom(IP_des, GP, GP_sample_des, false, true); 
+      t0 -= vpTime::measureTimeMs();
+      std::cout << "fSet_des " << levels-1 << " built in: " << -t0 << " ms" << std::endl;      
+    }
 
 #if defined(INDICATORS) || defined(OPT_DISP_MAX)
     vpImage<float> PGM_des_f(I_des.getHeight(), I_des.getWidth());
-    vpImage<unsigned char> PGM_des_u;
+    vpImage<unsigned char> PGM_des_u_cur_level;
+    vpImage<unsigned char> *PGM_des_u = new vpImage<unsigned char>[levels];
     vpPoseVector pp;
-    fSet_des.sampler.toImage(PGM_des_f, pp, perspCam_sensor);
-    vpImageConvert::convert(PGM_des_f, PGM_des_u);
+    for(unsigned int iLevel = 0 ; iLevel < levels ; iLevel++)
+    {
+      fSet_des[iLevel].sampler.toImage(PGM_des_f, pp, perspCam_sensor);
+      vpImageConvert::convert(PGM_des_f, PGM_des_u[iLevel]);
+    }
 #endif
 
 #ifdef OPT_DISP_MAX
     vpDisplayX disp_PGM_des;
-    disp_PGM_des.init(PGM_des_u, 100+I_des.getWidth()+5, 100, "PGM_des");
-    vpDisplay::display(PGM_des_u);
-    vpDisplay::flush(PGM_des_u);
+    PGM_des_u_cur_level = PGM_des_u[0];
+    disp_PGM_des.init(PGM_des_u_cur_level, 100+I_des.getWidth()+5, 100, "PGM_des");
+    vpDisplay::display(PGM_des_u_cur_level);
+    vpDisplay::flush(PGM_des_u_cur_level);
 #endif
 
 #ifdef INDICATORS
@@ -280,68 +365,92 @@ int main(int argc, char **argv)
     s.setf(std::ios::right, std::ios::adjustfield);
     s << "resultat/PGMd." << FILE_EXT;
     filename = s.str();
-    vpImageIo::write(PGM_des_u, filename);
+    vpImageIo::write(PGM_des_u_cur_level, filename);
 #endif //INDICATORS
 
-    servo.buildFrom(fSet_des);
-
-    servo.initControl(0.2f, 0.5f);
-    //servo.initControl(0.2f, 0.3f);
-
-    prPhotometricnnGMS<prCartesian2DPointVec> GP_sample(lambda_g);
-    std::cout << "nb features : " << fSet_des.set.size() << std::endl;
 
 #ifdef WITHROBOT
-  std::cout << "Deplacement vers pose initiale " << argc << " " << atof(argv[2])/atof(argv[1]) << " " << atof(argv[3])/atof(argv[1]) << std::endl;
-	vpColVector p_init;
-  p_init.resize(6);
 
-//Get the initial lambda_g value
+  //Get the metric factor
   float metFac = 1.f;
-  if(argc < 5)
+  if(argc < 6)
   {
 #ifdef VERBOSE
       std::cout << "no metric factor given" << std::endl;
 #endif
   }
   else
-    metFac = atof(argv[4]);
+    metFac = atof(argv[5]);
+
+  //Get the desired scene depth
+  float sceneDepth = 0.5f;
+  if(argc < 7)
+  {
+#ifdef VERBOSE
+      std::cout << "no scene depth provided" << std::endl;
+#endif
+  }
+  else
+    sceneDepth = atof(argv[6])/metFac;
+
+
+
+    servo.buildFrom(fSet_des[0]);
+
+    //initControl a appeler une seule fois si le meme sampler est utilise pour tous les niveaux de lambda_g
+    //float gain = 0.1f;  //if 6 DoF F_Max
+    //float gain = 1.f; //if 4 DoF F_max
+    float gain = 1.0f; bool shallow = true; //if 4 DoF F_min
+    //servo.initControl(0.1f, sceneDepth); //if 6 DoF
+    std::cout << "sceneDepth : " << sceneDepth << std::endl;
+    servo.initControl(gain, sceneDepth); 
+
+    //define the (array of) GP_sample (array mainly for saving to file reasons)
+    prPhotometricnnGMS<prCartesian2DPointVec> *GP_sample = new prPhotometricnnGMS<prCartesian2DPointVec>[levels];
+    GP_sample[0] = prPhotometricnnGMS<prCartesian2DPointVec>(lambda_g);
+    //GP_sample[0].setLambda(lambda_g); //Ca devrait etre possible: possible bug dans les surcharges d'operateurs
+    std::cout << "nb features : " << fSet_des[0].set.size() << std::endl;
+
+
 
   float shiftX = 0.f;
-  if(argc < 6)
+  if(argc < 8)
   {
 #ifdef VERBOSE
       std::cout << "no shift X given" << std::endl;
 #endif
   }
   else
-    shiftX = atof(argv[5]);
+    shiftX = atof(argv[7]);
 
   float shiftZ = 0.f;
-  if(argc < 7)
+  if(argc < 9)
   {
 #ifdef VERBOSE
       std::cout << "no shift Z given" << std::endl;
 #endif
   }
   else
-    shiftZ = atof(argv[6]);
+    shiftZ = atof(argv[8]);
 
   float rotY = 0.f;
-  if(argc < 8)
+  if(argc < 10)
   {
 #ifdef VERBOSE
       std::cout << "no rotate Y given" << std::endl;
 #endif
   }
   else
-    rotY = atof(argv[7]);
+    rotY = atof(argv[9]);
+
+	vpColVector p_init;
+  p_init.resize(6);
 
   p_init[0] = shiftX/metFac;
   p_init[2] = shiftZ/metFac;
   p_init[4] = rotY*M_PI/180.0;
 
-  std::cout << p_init.t() << std::endl;
+  std::cout << "Deplacement vers pose initiale " << p_init.t() << std::endl;
 
 	UR10.setCameraRelativePose(p_init);
 
@@ -370,26 +479,49 @@ int main(int argc, char **argv)
 #endif
         
     // Current features set setting from the current image
-    prRegularlySampledCPImage<unsigned char> IP_cur(I_des.getHeight(), I_des.getWidth());
+    prRegularlySampledCPImage<unsigned char> IP_cur(I_cur.getHeight(), I_cur.getWidth());
     IP_cur.setInterpType(prInterpType::IMAGEPLANE_BILINEAR);
     IP_cur.buildFrom(I_cur, perspCam); 
-        
-    prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage > fSet_cur;
+
+    //prepare the array of current photometric Gaussian Mixtures (1 per level)
+    prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage > *fSet_cur = new prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >[levels];
     t0 = vpTime::measureTimeMs();
-    fSet_cur.buildFrom(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler); // Goulot !
+    std::cout << "lg : " << GP_sample[0].getLambda() << std::endl;
+    fSet_cur[0].buildFrom(IP_cur, GP, GP_sample[0], poseJacobianCompute, updateSampler); 
     t0 -= vpTime::measureTimeMs();
-    std::cout << "fSet_cur built in: " << -t0 << " ms" << std::endl;
+    std::cout << "fSet_cur 0 built in: " << -t0 << " ms" << std::endl;
+
+    //current PGM of the intermediary lambda_g (lambda_g/=2)
+    for(unsigned int iLevel = 1 ; iLevel < (levels-1) ; iLevel++)
+    {
+      GP_sample[iLevel] = prPhotometricnnGMS<prCartesian2DPointVec>(0.5*GP_sample[iLevel-1].getLambda());
+      t0 = vpTime::measureTimeMs();
+      fSet_cur[iLevel].buildFrom(IP_cur, GP, GP_sample[iLevel], poseJacobianCompute, updateSampler);
+      t0 -= vpTime::measureTimeMs();
+      std::cout << "fSet_cur " << iLevel << " built in: " << -t0 << " ms" << std::endl;
+    }
+
+    //current PGM of the smallest possible lambda_g (similar to P only but with analytic gradients)
+    if(levels > 1)
+    {
+      GP_sample[levels-1] = prPhotometricnnGMS<prCartesian2DPointVec>(MIN_LAMBDA_G); //ssi nbSigma == 3
+      t0 = vpTime::measureTimeMs();
+      fSet_cur[levels-1].buildFrom(IP_cur, GP, GP_sample[levels-1], poseJacobianCompute, updateSampler); 
+      t0 -= vpTime::measureTimeMs();
+      std::cout << "fSet_cur " << levels-1 << " built in: " << -t0 << " ms" << std::endl;
+    }
+
 
 #if defined(INDICATORS) || defined(OPT_DISP_MAX)
     vpImage<float> PGM_cur_f(I_cur.getHeight(), I_cur.getWidth());
     vpImage<unsigned char> PGM_cur_u;
-    fSet_cur.sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
+    fSet_cur[0].sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
     vpImageConvert::convert(PGM_cur_f, PGM_cur_u);
 #endif
 
 #ifdef OPT_DISP_MAX
     vpDisplayX disp_PGM_cur;
-    disp_PGM_cur.init(PGM_cur_u, 100+I_des.getWidth()+5, 100+PGM_des_u.getHeight()+30, "PGM_cur");
+    disp_PGM_cur.init(PGM_cur_u, 100+I_des.getWidth()+5, 100+PGM_des_u_cur_level.getHeight()+30, "PGM_cur");
     vpDisplay::display(PGM_cur_u);
     vpDisplay::flush(PGM_cur_u);
 #endif
@@ -412,7 +544,7 @@ int main(int argc, char **argv)
 #if defined(INDICATORS) || defined(OPT_DISP_MAX)
     //Compute differences of PGM for illustration purpose
     vpImage<unsigned char> PGMdiff(haut, larg) ;
-    vpImageTools::imageDifference(PGM_cur_u,PGM_des_u,PGMdiff) ;
+    vpImageTools::imageDifference(PGM_cur_u,PGM_des_u_cur_level,PGMdiff) ;
 #endif
 
 #ifdef OPT_DISP_MIN
@@ -426,7 +558,7 @@ int main(int argc, char **argv)
 #ifdef OPT_DISP_MAX
     // Affiche la difference de PGM
     vpDisplayX disp_PGM_diff;
-    disp_PGM_diff.init(PGMdiff, 100+I_des.getWidth()+5, 100+PGM_des_u.getHeight()+30+PGM_cur_u.getHeight()+30, "PGM_cur-PGM_des (minimized)") ;
+    disp_PGM_diff.init(PGMdiff, 100+I_des.getWidth()+5, 100+PGM_des_u_cur_level.getHeight()+30+PGM_cur_u.getHeight()+30, "PGM_cur-PGM_des (minimized)") ;
 
     vpDisplay::display(PGMdiff);
     vpDisplay::flush(PGMdiff);
@@ -435,16 +567,19 @@ int main(int argc, char **argv)
 
   //Control loop
   // ----------------------------------------------------------
+  unsigned int iLevel = 0;
   unsigned int nbDOF = 6, numDOF, indDOF;
   int iter   = 1;
-  vpColVector v6(6), v;
-  double residual;
+  vpColVector v6(6), v(6);
+  v = 1;
+  double residual_back = 1e30, residual = 0.8*residual_back, residual_diff;
 #ifdef INDICATORS
 /*  vpPoseVector p;
   std::vector<vpPoseVector> v_p;*/
-  vpColVector p;
+//  vpColVector p;
   std::vector<vpColVector> v_p;
   std::vector<double> v_residuals;
+  std::vector<double> v_lambdas;
   std::vector<vpImage<unsigned char> > v_I_cur, v_PGM_cur;
   std::vector<vpImage<unsigned char> > v_Idiff, v_PGMdiff;
   std::vector<double> v_tms;
@@ -454,6 +589,33 @@ int main(int argc, char **argv)
 	{
     tms = vpTime::measureTimeMs();
     std::cout << "--------------------------------------------" << iter++ << std::endl ;
+
+    //residual_diff = 0.5*residual_diff+0.5*fabs(residual-residual_back);
+    residual_diff = fabs(residual-residual_back);
+    std::cout << iLevel << " | residual diff / residual_back : " << residual_diff/residual_back << std::endl;
+    if(((iter < 60) || ((residual_diff > (gain*(1e-3)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
+    //if((iter < 60) || (sqrt(v.sumSquare()) > 1e-2))
+    {
+      residual_back = residual;
+    }
+    else
+    {
+      if(iLevel < (levels-1))
+      {
+        iLevel++;
+  /*      if(iLevel == levels)
+          break;*/
+
+        servo.buildFrom(fSet_des[iLevel]);
+        PGM_des_u_cur_level = PGM_des_u[iLevel];
+#ifdef OPT_DISP_MAX
+		vpDisplay::display(PGM_des_u_cur_level);
+		vpDisplay::flush(PGM_des_u_cur_level);
+#endif
+
+        residual_back = 1e30; //as residuals with different lambda_g are not comparable
+      }
+    }
 
 #ifdef INDICATORS
 #ifdef WITHROBOT
@@ -468,10 +630,10 @@ int main(int argc, char **argv)
 
     //update current features set
     IP_cur.buildFrom(I_cur, perspCam); 
-    fSet_cur.updateMeasurement(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler); 
+    fSet_cur[iLevel].updateMeasurement(IP_cur, GP, GP_sample[iLevel], poseJacobianCompute, updateSampler); 
 
     //Compute control vector
-    residual = 0.5*servo.control(fSet_cur, v, robust);
+    residual = 0.5*servo.control(fSet_cur[iLevel], v, robust);
 
     std::cout << "error : " << residual << std::endl;
 
@@ -497,9 +659,9 @@ int main(int argc, char **argv)
 #endif
 
 #if defined(OPT_DISP_MAX) || defined(INDICATORS)
-    fSet_cur.sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
+    fSet_cur[iLevel].sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
     vpImageConvert::convert(PGM_cur_f, PGM_cur_u);
-    vpImageTools::imageDifference(PGM_cur_u,PGM_des_u,PGMdiff) ;
+    vpImageTools::imageDifference(PGM_cur_u,PGM_des_u_cur_level,PGMdiff) ;
 #endif
 
 #ifdef OPT_DISP_MIN
@@ -523,6 +685,7 @@ int main(int argc, char **argv)
 #ifdef INDICATORS
     v_p.push_back(p);
     v_residuals.push_back(residual);
+    v_lambdas.push_back(GP_sample[iLevel].getLambda());
     v_I_cur.push_back(I_cur);
     v_PGM_cur.push_back(PGM_cur_u);
     v_Idiff.push_back(Idiff);
@@ -532,6 +695,9 @@ int main(int argc, char **argv)
   
 	}
 	while(!vpDisplay::getClick(I_cur, false));
+
+  v6.resize(6);
+  UR10.setCameraVelocity(v6);
 
 #ifdef INDICATORS
     //save pose list to file
@@ -546,6 +712,12 @@ int main(int argc, char **argv)
     s << "resultat/residuals.txt";
     filename = s.str();
     std::ofstream ficResiduals(filename.c_str());
+    //save lambda_g list to file
+    s.str("");
+    s.setf(std::ios::right, std::ios::adjustfield);
+    s << "resultat/lambda_g.txt";
+    filename = s.str();
+    std::ofstream ficLambda(filename.c_str());
     //save the processing times
     s.str("");
     s.setf(std::ios::right, std::ios::adjustfield);
@@ -557,6 +729,7 @@ int main(int argc, char **argv)
     {
       ficPoses << v_p[i].t() << std::endl;
       ficResiduals << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << v_residuals[i] << std::endl;
+      ficLambda << v_lambdas[i] << std::endl;
       ficTimes << v_tms[i] << std::endl;
 
 
@@ -587,6 +760,7 @@ int main(int argc, char **argv)
 
     ficPoses.close();
     ficResiduals.close();
+    ficLambda.close();
     ficTimes.close();
 #endif //INDICATORS
     

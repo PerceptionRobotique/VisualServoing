@@ -40,7 +40,7 @@ INCLUDE_DIRECTORIES(/usr/include/flycapture)
 
 set(PGMPerspVS_cpp
   PGMPerspVS.cpp
-
+  PGMPerspVS_levels.cpp
   PGMPerspVS_test.cpp
 )
 
@@ -65,4 +65,11 @@ target_sources(PGMPerspVS PUBLIC ${SRC_SOURCES})
 target_link_libraries(PGMPerspVS ur_rtde::rtde)
 #IF USE FLIR
 target_link_libraries(PGMPerspVS -lflycapture)
+
+#IF USE UR10 AND/OR FLIR
+target_sources(PGMPerspVS_levels PUBLIC ${SRC_SOURCES})
+#IF USE UR10
+target_link_libraries(PGMPerspVS_levels ur_rtde::rtde)
+#IF USE FLIR
+target_link_libraries(PGMPerspVS_levels -lflycapture)
 
