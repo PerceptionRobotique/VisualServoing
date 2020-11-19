@@ -222,6 +222,8 @@ int main(int argc, char **argv)
 	j_init[4] = vpMath::rad(88.19);
 	j_init[5] = vpMath::rad(97.87);
 */
+
+/*
 //red table
   //0.25 m depth
 	j_init[0] = vpMath::rad(-118.10);
@@ -230,10 +232,57 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-30.09);
 	j_init[4] = vpMath::rad(88.61);
 	j_init[5] = vpMath::rad(94.94);
-
+*/
+/*
+  //objects to grasp
+  //0.25 m depth
+	j_init[0] = vpMath::rad(-170.17);
+	j_init[1] = vpMath::rad(-159.73);
+	j_init[2] = vpMath::rad(-112.02);
+	j_init[3] = vpMath::rad(94.55);
+	j_init[4] = vpMath::rad(85.74);
+	j_init[5] = vpMath::rad(88.81);
+*/
+/*
+  //ground
+  //0.5 m depth 1
+	j_init[0] = vpMath::rad(-135.91);
+	j_init[1] = vpMath::rad(-163.16);
+	j_init[2] = vpMath::rad(-95.35);
+	j_init[3] = vpMath::rad(-6.66);
+	j_init[4] = vpMath::rad(90.63);
+	j_init[5] = vpMath::rad(91.46);
+*/
+  //desk, Marylin
+	j_init[0] = vpMath::rad(-51.13);
+	j_init[1] = vpMath::rad(-129.05);
+	j_init[2] = vpMath::rad(-96.63);
+	j_init[3] = vpMath::rad(-41.79);
+	j_init[4] = vpMath::rad(88.69);
+	j_init[5] = vpMath::rad(84.95);
+/*
+  //ground
+  //0.5 m depth 2
+	j_init[0] = vpMath::rad(-130.02);
+	j_init[1] = vpMath::rad(-159.33);
+	j_init[2] = vpMath::rad(-99.84);
+	j_init[3] = vpMath::rad(-5.89);
+	j_init[4] = vpMath::rad(90.14);
+	j_init[5] = vpMath::rad(97.37);
+*/
+/*
+  //ground
+  //0.4 m depth 3
+	j_init[0] = vpMath::rad(-129.95);
+	j_init[1] = vpMath::rad(-165.05);
+	j_init[2] = vpMath::rad(-95.51);
+	j_init[3] = vpMath::rad(-4.5);
+	j_init[4] = vpMath::rad(90.13);
+	j_init[5] = vpMath::rad(97.37);
+*/
   UR10.setCameraArticularPose(j_init);
 
-  vpTime::wait(1000);
+  vpTime::wait(5000);
 #endif
 
 #ifdef WITHCAMERA
@@ -290,8 +339,8 @@ int main(int argc, char **argv)
                            prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
                            prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
 
-    //bool dofs[6] = {true, true, true, true, true, true};
-    bool dofs[6] = {true, true, true, false, false, true}; // no coupling?
+    bool dofs[6] = {true, true, true, true, true, true};
+    //bool dofs[6] = {true, true, true, false, false, true}; // no coupling?
 
     servo.setdof(dofs[0], dofs[1], dofs[2], dofs[3], dofs[4], dofs[5]);
     
@@ -398,9 +447,9 @@ int main(int argc, char **argv)
     servo.buildFrom(fSet_des[0]);
 
     //initControl a appeler une seule fois si le meme sampler est utilise pour tous les niveaux de lambda_g
-    //float gain = 0.1f;  //if 6 DoF F_Max
-    //float gain = 1.f; //if 4 DoF F_max
-    float gain = 1.0f; bool shallow = true; //if 4 DoF F_min
+    float gain = 0.1f; bool shallow = false;   //if 6 DoF F_Max 0.5f
+    //float gain = 1.f; bool shallow = false;  //if 4 DoF F_max
+    //float gain = 1.0f; bool shallow = true; //if 4 DoF F_min
     //servo.initControl(0.1f, sceneDepth); //if 6 DoF
     std::cout << "sceneDepth : " << sceneDepth << std::endl;
     servo.initControl(gain, sceneDepth); 
@@ -446,9 +495,9 @@ int main(int argc, char **argv)
 	vpColVector p_init;
   p_init.resize(6);
 
-  p_init[0] = shiftX/metFac;
+  p_init[1] = shiftX/metFac;
   p_init[2] = shiftZ/metFac;
-  p_init[4] = rotY*M_PI/180.0;
+  p_init[3] = rotY/180.0; //*M_PI
 
   std::cout << "Deplacement vers pose initiale " << p_init.t() << std::endl;
 
@@ -583,17 +632,28 @@ int main(int argc, char **argv)
   std::vector<vpImage<unsigned char> > v_I_cur, v_PGM_cur;
   std::vector<vpImage<unsigned char> > v_Idiff, v_PGMdiff;
   std::vector<double> v_tms;
+  std::vector<bool> v_servo_actif;
+
+  double cond;
+  std::vector<double> v_svd;
 #endif //INDICATORS
   double tms, duree;
+  vpMouseButton::vpMouseButtonType btn;
+  bool btn_pressed = false;
+  bool servo_actif = false;
+  double fact_gain = 1.0;
 	do
 	{
     tms = vpTime::measureTimeMs();
-    std::cout << "--------------------------------------------" << iter++ << std::endl ;
+    if(servo_actif)
+      std::cout << "--------------------------------------------" << iter++ << std::endl ;
 
     //residual_diff = 0.5*residual_diff+0.5*fabs(residual-residual_back);
     residual_diff = fabs(residual-residual_back);
     std::cout << iLevel << " | residual diff / residual_back : " << residual_diff/residual_back << std::endl;
-    if(((iter < 60) || ((residual_diff > (gain*(1e-3)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
+    //seuil pour 4DoF 1e-3
+    //seuil pour 6DoF 1e-4
+    if(((iter < 60) || ((residual_diff > (gain*(5e-4)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
     //if((iter < 60) || (sqrt(v.sumSquare()) > 1e-2))
     {
       residual_back = residual;
@@ -603,8 +663,9 @@ int main(int argc, char **argv)
       if(iLevel < (levels-1))
       {
         iLevel++;
-  /*      if(iLevel == levels)
-          break;*/
+        if(iLevel == levels)
+          fact_gain = 0.5;
+          //break;
 
         servo.buildFrom(fSet_des[iLevel]);
         PGM_des_u_cur_level = PGM_des_u[iLevel];
@@ -637,6 +698,8 @@ int main(int argc, char **argv)
 
     std::cout << "error : " << residual << std::endl;
 
+    v *= fact_gain;
+
     //update the DOFs
     indDOF = 0;
     for (numDOF = 0 ; numDOF < nbDOF ; numDOF++)
@@ -651,7 +714,8 @@ int main(int argc, char **argv)
     std::cout << "v6 : " << v6.t() << std::endl;
 
 #ifdef WITHROBOT
-    UR10.setCameraVelocity(v6);
+    if(servo_actif)
+      UR10.setCameraVelocity(v6);
 #endif
 
 #if defined(OPT_DISP_MIN) || defined(INDICATORS)
@@ -691,10 +755,20 @@ int main(int argc, char **argv)
     v_Idiff.push_back(Idiff);
     v_PGMdiff.push_back(PGMdiff);
     v_tms.push_back(duree);
+
+    v_servo_actif.push_back(servo_actif);
+
+    cond = servo.getCond(robust);
+    v_svd.push_back(cond);
 #endif //INDICATORS      
   
+    btn_pressed=vpDisplay::getClick(I_cur, btn, false);
+
+    if(btn_pressed && (btn == vpMouseButton::button3))
+      servo_actif = !servo_actif;
+
 	}
-	while(!vpDisplay::getClick(I_cur, false));
+	while(!btn_pressed || (btn != vpMouseButton::button1));
 
   v6.resize(6);
   UR10.setCameraVelocity(v6);
@@ -724,6 +798,18 @@ int main(int argc, char **argv)
     s << "resultat/times.txt";
     filename = s.str();
     std::ofstream ficTimes(filename.c_str());
+    //save svd list to file
+    s.str("");
+    s.setf(std::ios::right, std::ios::adjustfield);
+    s << "resultat/cond.txt";
+    filename = s.str();
+    std::ofstream ficSVD(filename.c_str());
+    //save servo actif list to file
+    s.str("");
+    s.setf(std::ios::right, std::ios::adjustfield);
+    s << "resultat/servoActif.txt";
+    filename = s.str();
+    std::ofstream ficServo(filename.c_str());
 
     for(unsigned int i = 0 ; i < v_p.size() ; i++)
     {
@@ -731,7 +817,8 @@ int main(int argc, char **argv)
       ficResiduals << std::fixed << std::setw( 11 ) << std::setprecision( 6 ) << v_residuals[i] << std::endl;
       ficLambda << v_lambdas[i] << std::endl;
       ficTimes << v_tms[i] << std::endl;
-
+      ficSVD << v_svd[i] << std::endl;
+      ficServo << v_servo_actif[i] << std::endl;
 
       s.str("");
       s.setf(std::ios::right, std::ios::adjustfield);
@@ -762,6 +849,8 @@ int main(int argc, char **argv)
     ficResiduals.close();
     ficLambda.close();
     ficTimes.close();
+    ficSVD.close();
+    ficServo.close();
 #endif //INDICATORS
     
 	return 0;
