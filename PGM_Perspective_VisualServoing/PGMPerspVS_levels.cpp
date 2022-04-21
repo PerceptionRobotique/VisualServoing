@@ -285,11 +285,11 @@ int main(int argc, char **argv)
   vpTime::wait(5000);
 #endif
 
-#ifdef WITHCAMERA
-    vpImage<unsigned char> Iacq;
-
     //Parametres intrinseques pour FlirCam
 	  int larg = 640/redFac, haut = 512/redFac;
+	  
+#ifdef WITHCAMERA
+    vpImage<unsigned char> Iacq;
 
     CamFlir<unsigned char> grabber(640,512,8,0); 
    
@@ -326,7 +326,9 @@ int main(int argc, char **argv)
   std::ofstream ficDesiredPose(filename.c_str());
 
   vpColVector p;
+#ifdef WITHROBOT   
   UR10.getCameraPoseRaw(p);
+#endif
   ficDesiredPose << p.t() << std::endl;
 
   ficDesiredPose.close();
@@ -418,8 +420,6 @@ int main(int argc, char **argv)
 #endif //INDICATORS
 
 
-#ifdef WITHROBOT
-
   //Get the metric factor
   float metFac = 1.f;
   if(argc < 6)
@@ -501,6 +501,7 @@ int main(int argc, char **argv)
 
   std::cout << "Deplacement vers pose initiale " << p_init.t() << std::endl;
 
+#ifdef WITHROBOT
 	UR10.setCameraRelativePose(p_init);
 
   vpTime::wait(5000);
@@ -771,7 +772,9 @@ int main(int argc, char **argv)
 	while(!btn_pressed || (btn != vpMouseButton::button1));
 
   v6.resize(6);
+#ifdef WITHROBOT   
   UR10.setCameraVelocity(v6);
+#endif
 
 #ifdef INDICATORS
     //save pose list to file
