@@ -11,7 +11,7 @@
 
 #include <string>
 
-#include <rtde_receive_interface.h>
+#include <ur_rtde/rtde_receive_interface.h>
 
 using namespace ur_rtde;
 
