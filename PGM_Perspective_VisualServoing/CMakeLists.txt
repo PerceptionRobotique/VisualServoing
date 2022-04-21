@@ -32,6 +32,12 @@ if(PER_FOUND)
 	include(${PER_USE_FILE})
 endif(PER_FOUND)
 
+# ViSP (to do: list modules only)
+find_package(VISP REQUIRED)
+if(VISP_FOUND)
+	include(${VISP_USE_FILE})
+endif(VISP_FOUND)
+
 #IF USE UR10
 find_package(ur_rtde REQUIRED)
 
