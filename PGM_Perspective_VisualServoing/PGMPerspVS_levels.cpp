@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef WITHROBOT       
-	C_UR UR10("192.168.1.3", 30002, 2.0);//0.032);
+	C_UR UR10("192.168.1.3", 30003, 0.120);//0.032);
 
   // with F0.95 lens
 	vpColVector j_init(6);
@@ -254,6 +254,7 @@ int main(int argc, char **argv)
 	j_init[4] = vpMath::rad(90.63);
 	j_init[5] = vpMath::rad(91.46);
 */
+/*
   //desk, Marylin
 	j_init[0] = vpMath::rad(-51.13);
 	j_init[1] = vpMath::rad(-129.05);
@@ -261,7 +262,8 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-41.79);
 	j_init[4] = vpMath::rad(88.69);
 	j_init[5] = vpMath::rad(84.95);
-/*
+*/
+
   //ground
   //0.5 m depth 2
 	j_init[0] = vpMath::rad(-130.02);
@@ -270,7 +272,7 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-5.89);
 	j_init[4] = vpMath::rad(90.14);
 	j_init[5] = vpMath::rad(97.37);
-*/
+
 /*
   //ground
   //0.4 m depth 3
@@ -448,7 +450,8 @@ int main(int argc, char **argv)
     servo.buildFrom(fSet_des[0]);
 
     //initControl a appeler une seule fois si le meme sampler est utilise pour tous les niveaux de lambda_g
-    float gain = 0.1f; bool shallow = false;   //if 6 DoF F_Max 0.5f
+    float gain = 0.5f; bool shallow = false;   //if 6 DoF F_Max 0.5f
+    //float gain = 1.f; bool shallow = false;   //if 6 DoF F_Max 0.5f
     //float gain = 1.f; bool shallow = false;  //if 4 DoF F_max
     //float gain = 1.0f; bool shallow = true; //if 4 DoF F_min
     //servo.initControl(0.1f, sceneDepth); //if 6 DoF
@@ -473,32 +476,65 @@ int main(int argc, char **argv)
   else
     shiftX = atof(argv[7]);
 
-  float shiftZ = 0.f;
+  float shiftY = 0.f;
   if(argc < 9)
+  {
+#ifdef VERBOSE
+      std::cout << "no shift Y given" << std::endl;
+#endif
+  }
+  else
+    shiftY = atof(argv[8]);
+
+  float shiftZ = 0.f;
+  if(argc < 10)
   {
 #ifdef VERBOSE
       std::cout << "no shift Z given" << std::endl;
 #endif
   }
   else
-    shiftZ = atof(argv[8]);
+    shiftZ = atof(argv[9]);
+
+  float rotX = 0.f;
+  if(argc < 11)
+  {
+#ifdef VERBOSE
+      std::cout << "no rotate X given" << std::endl;
+#endif
+  }
+  else
+    rotX = atof(argv[10]);
 
   float rotY = 0.f;
-  if(argc < 10)
+  if(argc < 12)
   {
 #ifdef VERBOSE
       std::cout << "no rotate Y given" << std::endl;
 #endif
   }
   else
-    rotY = atof(argv[9]);
+    rotY = atof(argv[11]);
+
+  float rotZ = 0.f;
+  if(argc < 13)
+  {
+#ifdef VERBOSE
+      std::cout << "no rotate Z given" << std::endl;
+#endif
+  }
+  else
+    rotZ = atof(argv[12]);
 
 	vpColVector p_init;
   p_init.resize(6);
 
-  p_init[1] = shiftX/metFac;
-  p_init[2] = shiftZ/metFac;
-  p_init[3] = rotY/180.0; //*M_PI
+  p_init[0] = shiftX;// /metFac;
+  p_init[1] = shiftY;// /metFac;
+  p_init[2] = shiftZ;// /metFac;
+  p_init[3] = rotX;// *M_PI/180.0; 
+  p_init[4] = rotY;// *M_PI/180.0; 
+  p_init[5] = rotZ;// *M_PI/180.0; 
 
   std::cout << "Deplacement vers pose initiale " << p_init.t() << std::endl;
 
@@ -655,7 +691,7 @@ int main(int argc, char **argv)
     std::cout << iLevel << " | residual diff / residual_back : " << residual_diff/residual_back << std::endl;
     //seuil pour 4DoF 1e-3
     //seuil pour 6DoF 1e-4
-    if(((iter < 60) || ((residual_diff > (gain*(5e-4)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
+    if(((iter < 600) || ((residual_diff > (gain*(5e-4)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
     //if((iter < 60) || (sqrt(v.sumSquare()) > 1e-2))
     {
       residual_back = residual;
@@ -666,7 +702,7 @@ int main(int argc, char **argv)
       {
         iLevel++;
         if(iLevel == levels)
-          fact_gain = 0.5;
+          fact_gain = 0.25;
           //break;
 
         servo.buildFrom(fSet_des[iLevel]);
