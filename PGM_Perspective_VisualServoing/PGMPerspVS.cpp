@@ -16,7 +16,7 @@
  \date September- 2020
  */
 
-#define WITHROBOT
+//#define WITHROBOT
 #define WITHCAMERA
 
 #ifdef WITHROBOT
@@ -24,7 +24,8 @@
 #endif
 
 #ifdef WITHCAMERA
-  #include "src/CamFlir.hpp"
+//  #include "src/CamFlir.hpp"
+  #include "src/CamFlirSpinnaker.hpp"
 #endif
 
 #include <iostream>
@@ -197,7 +198,7 @@ int main(int argc, char **argv)
     //Parametres intrinseques pour FlirCam
 	  int larg = 640/redFac, haut = 512/redFac;
 
-    CamFlir<unsigned char> grabber(larg,haut,8,0); 
+    CamFlirSpinnaker<unsigned char> grabber(larg,haut,8,0); 
    
     //Acquisition
     grabber.getFrame(Iacq);

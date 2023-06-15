@@ -42,7 +42,9 @@ endif(VISP_FOUND)
 find_package(ur_rtde REQUIRED)
 
 #IF USE FLIR
-INCLUDE_DIRECTORIES(/usr/include/flycapture)
+#INCLUDE_DIRECTORIES(/usr/include/flycapture)
+INCLUDE_DIRECTORIES(/opt/spinnaker/include/)
+LINK_DIRECTORIES(/opt/spinnaker/lib/)
 
 set(PGMPerspVS_cpp
   PGMPerspVS.cpp
@@ -55,7 +57,8 @@ SET (SRC_SOURCES
 		src/C_UR.h
 		src/C_UR.cpp
 #IF USE FLIR
-    src/CamFlir.hpp
+#    src/CamFlir.hpp
+    src/CamFlirSpinnaker.hpp
 )
 
 foreach(cpp ${PGMPerspVS_cpp})
@@ -70,12 +73,14 @@ target_sources(PGMPerspVS PUBLIC ${SRC_SOURCES})
 #IF USE UR10
 target_link_libraries(PGMPerspVS ur_rtde::rtde)
 #IF USE FLIR
-target_link_libraries(PGMPerspVS -lflycapture)
+#target_link_libraries(PGMPerspVS -lflycapture)
+target_link_libraries(PGMPerspVS -lSpinnaker)
 
 #IF USE UR10 AND/OR FLIR
 target_sources(PGMPerspVS_levels PUBLIC ${SRC_SOURCES})
 #IF USE UR10
 target_link_libraries(PGMPerspVS_levels ur_rtde::rtde)
 #IF USE FLIR
-target_link_libraries(PGMPerspVS_levels -lflycapture)
+#target_link_libraries(PGMPerspVS_levels -lflycapture)
+target_link_libraries(PGMPerspVS_levels -lSpinnaker)
 
