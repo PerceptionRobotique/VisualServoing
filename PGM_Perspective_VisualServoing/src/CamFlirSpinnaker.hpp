@@ -180,8 +180,10 @@ public:
 						//
 						// Convert image to mono 8
 						//
-						convertedImage = pResultImage->Convert(PixelFormat_Mono8, HQ_LINEAR);
-						
+						//convertedImage = pResultImage->Convert(PixelFormat_Mono8, HQ_LINEAR);
+						std::cout << "processor" << std::endl;
+						convertedImage = processor.Convert(pResultImage, PixelFormat_Mono8);
+						std::cout << "resize" << std::endl;
 						I.resize(convertedImage->GetHeight(), convertedImage->GetWidth(), false);
 
 						memcpy(I.bitmap, convertedImage->GetData(), convertedImage->GetBufferSize());
@@ -280,6 +282,8 @@ int PrintDeviceInfo(INodeMap& nodeMap)
 	CameraPtr pCam;
 	ImagePtr convertedImage;
 	ImagePtr pResultImage;
+	
+	ImageProcessor processor;
 
 	vpImage<T> Ie;
 	int depth;

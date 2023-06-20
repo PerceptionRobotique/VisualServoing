@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef WITHROBOT       
-	C_UR UR10("192.168.1.3", 30003, 0.120);//0.032);
+	C_UR UR10("192.168.1.3", 30002, 2.0);//0.120);//0.032);
 
   // with F0.95 lens
 	vpColVector j_init(6);
@@ -529,12 +529,12 @@ int main(int argc, char **argv)
 	vpColVector p_init;
   p_init.resize(6);
 
-  p_init[0] = shiftX;// /metFac;
-  p_init[1] = shiftY;// /metFac;
-  p_init[2] = shiftZ;// /metFac;
-  p_init[3] = rotX;// *M_PI/180.0; 
-  p_init[4] = rotY;// *M_PI/180.0; 
-  p_init[5] = rotZ;// *M_PI/180.0; 
+  p_init[0] = shiftX/metFac;
+  p_init[1] = shiftY/metFac;
+  p_init[2] = shiftZ/metFac;
+  p_init[3] = rotX*M_PI/180.0; 
+  p_init[4] = rotY*M_PI/180.0; 
+  p_init[5] = rotZ*M_PI/180.0; 
 
   std::cout << "Deplacement vers pose initiale " << p_init.t() << std::endl;
 
@@ -658,6 +658,7 @@ int main(int argc, char **argv)
   unsigned int nbDOF = 6, numDOF, indDOF;
   int iter   = 1;
   vpColVector v6(6), v(6);
+  v6 = 0;
   v = 1;
   double residual_back = 1e30, residual = 0.8*residual_back, residual_diff;
 #ifdef INDICATORS
@@ -679,7 +680,7 @@ int main(int argc, char **argv)
   vpMouseButton::vpMouseButtonType btn;
   bool btn_pressed = false;
   bool servo_actif = false;
-  double fact_gain = 1.0;
+  double fact_gain = 0.7;//1.0;
 	do
 	{
     tms = vpTime::measureTimeMs();
@@ -691,7 +692,7 @@ int main(int argc, char **argv)
     std::cout << iLevel << " | residual diff / residual_back : " << residual_diff/residual_back << std::endl;
     //seuil pour 4DoF 1e-3
     //seuil pour 6DoF 1e-4
-    if(((iter < 600) || ((residual_diff > (gain*(5e-4)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
+    if(((iter < 600) || ((residual_diff > (gain*(1e-2)*residual_back)) )) && (!shallow || (sqrt(v.sumSquare()) > 1e-5)))
     //if((iter < 60) || (sqrt(v.sumSquare()) > 1e-2))
     {
       residual_back = residual;

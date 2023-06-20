@@ -27,7 +27,7 @@ project(PGM_Perspective_VisualServoing)
 
 cmake_minimum_required(VERSION 3.1)
 
-find_package(PER REQUIRED per_core per_core_extended per_io per_features per_sensor_pose_estimation per_estimation)
+find_package(PER REQUIRED per_core per_io per_features per_sensor_pose_estimation per_estimation)
 if(PER_FOUND)
 	include(${PER_USE_FILE})
 endif(PER_FOUND)
