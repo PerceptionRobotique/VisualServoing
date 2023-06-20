@@ -69,7 +69,8 @@ int C_UR::setCameraVelocity(vpColVector &cv)
 
 //    osChaine << "speedl([" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ", " << v[4] << ", " << v[5] << "], a=2.0, t=0.05)\n";//, t=" << delta_t << ")\n";
 //    osChaine << std::fixed << std::setprecision( 4 ) << "speedl([" << bv[0] << ", " << bv[1] << ", " << bv[2] << ", " << bv[3] << ", " << bv[4] << ", " << bv[5] << "], a=0.05, t=0.33)\n";//, t=" << delta_t << ")\n";
-    osChaine << "speedl([" << bv[0] << ", " << bv[1] << ", " << bv[2] << ", " << bv[3] << ", " << bv[4] << ", " << bv[5] << "], a=0.033, t=" << delta_t << ", aRot=1.0)\n";//, t=" << delta_t << ")\n";
+//    osChaine << "speedl([" << bv[0] << ", " << bv[1] << ", " << bv[2] << ", " << bv[3] << ", " << bv[4] << ", " << bv[5] << "], a=0.033, t=" << delta_t << ", aRot=1.0)\n";//, t=" << delta_t << ")\n";
+        osChaine << std::fixed << std::setprecision( 4 ) << "speedl([" << bv[0] << ", " << bv[1] << ", " << bv[2] << ", " << bv[3] << ", " << bv[4] << ", " << bv[5] << "], a=0.05, t=0.33)\n";//, t=" << delta_t << ")\n";
 
 // OK, mais "stops"
 //    osChaine << "movej(pose_trans(get_actual_tcp_pose(), p[" << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3] << ", " << v[4] << ", " << v[5] << "]), t=" << delta_t << ")\n"; //, r=0.0011
