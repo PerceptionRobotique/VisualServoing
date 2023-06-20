@@ -30,7 +30,8 @@ or
 #endif
 
 #ifdef WITHCAMERA
-  #include "src/CamFlir.hpp"
+//  #include "src/CamFlir.hpp"
+  #include "src/CamFlirSpinnaker.hpp"
 #endif
 
 #include <iostream>
@@ -471,7 +472,7 @@ int main(int argc, char **argv)
 #ifdef WITHCAMERA
     vpImage<unsigned char> Iacq;
 
-    CamFlir<unsigned char> grabber(640,512,8,0); 
+    CamFlirSpinnaker<unsigned char> grabber(640,512,8,0); 
    
     //Acquisition
     grabber.getFrame(Iacq);
