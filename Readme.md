@@ -9,8 +9,7 @@ The directories are organized under three different categories:
 
 In either case, all provided servoing are based on the minimization of the cost function computed as the sum of squared differences between a reference and a desired image.
 
-The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an xml file compatible with the libPeR format (download examples here: http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip 
-).
+The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an xml file compatible with the libPeR format (download examples here: (download examples here: [2020_PGM_Perspective_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip) ).
 
 ```
 Copyright (C) 2017-2023 by MIS lab (UPJV). All rights reserved.
