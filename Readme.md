@@ -48,7 +48,7 @@ The programs are able to perform the servoing on images of a perspective camera,
 
 This method was originally presented in
 
-> Caron, G. (2021). Defocus-based direct visual servoing. IEEE Robotics and Automation Letters, 6(2), 4056-4063.
+> Crombez, N., Mouaddib, E. M., Caron, G., & Chaumette, F. (2018). Visual servoing with photometric gaussian mixtures as dense features. IEEE Transactions on Robotics, 35(1), 49-63.
 
 ### MPP-based Visual Servoing
 
