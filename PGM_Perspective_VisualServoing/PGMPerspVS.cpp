@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 
     servo.buildFrom(fSet_des);
 
-    servo.initControl(0.2f, 0.5f);
+    servo.initControl(1.0f, 0.5f);
     //servo.initControl(0.2f, 0.3f);
 
     prPhotometricnnGMS<prCartesian2DPointVec> GP_sample(lambda_g);
