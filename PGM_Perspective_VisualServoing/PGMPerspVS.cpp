@@ -13,10 +13,10 @@
  *
  \author Guillaume CARON
  \version 0.1
- \date September- 2020
+ \date September 2020 ; December 2023
  */
 
-//#define WITHROBOT
+#define WITHROBOT
 #define WITHCAMERA
 
 #ifdef WITHROBOT
@@ -171,12 +171,12 @@ int main(int argc, char **argv)
 	j_init[5] = vpMath::rad(-0.2);*/
 
   //0.5 m depth
-	j_init[0] = vpMath::rad(-43.63);
-	j_init[1] = vpMath::rad(-109.51);
-	j_init[2] = vpMath::rad(-94.18);
-	j_init[3] = vpMath::rad(-63.91);
-	j_init[4] = vpMath::rad(88.46);
-	j_init[5] = vpMath::rad(92.64);
+	j_init[0] = vpMath::rad(-44.22);
+	j_init[1] = vpMath::rad(-151.17);
+	j_init[2] = vpMath::rad(-99.14);
+	j_init[3] = vpMath::rad(-17.27);
+	j_init[4] = vpMath::rad(88.36);
+	j_init[5] = vpMath::rad(91.60);
 /*
   //0.3 m depth
 	j_init[0] = vpMath::rad(-38.24);
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
     std::cout << "nb features : " << fSet_des.set.size() << std::endl;
 
 #ifdef WITHROBOT
-  std::cout << "Deplacement vers pose initiale " << argc << " " << atof(argv[2])/atof(argv[1]) << " " << atof(argv[3])/atof(argv[1]) << std::endl;
+  std::cout << "Deplacement vers pose initiale " << std::endl;
 	vpColVector p_init;
   p_init.resize(6);
 
@@ -467,9 +467,11 @@ int main(int argc, char **argv)
 #endif
 
     //update current features set
+    //std::cout << "build current acquisition model" << std::endl;
     IP_cur.buildFrom(I_cur, _camera); 
-    fSet_cur.updateMeasurement(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler); 
-
+    //std::cout << "updateMeasurement" << std::endl;
+    fSet_cur.updateMeasurement(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler);  
+    //std::cout << "control" << std::endl;
     //Compute control vector
     residual = 0.5*servo.control(fSet_cur, v, robust);
 
