@@ -227,7 +227,14 @@ int main(int argc, char **argv)
 #endif //INDICATORS
 
     // 2. VS objects initialization, considering the pose control of a perspective camera from the feature set of photometric non-normalized Gaussian mixture 2D samples compared thanks to the SSD
-    
+    /*
+    prSensorPoseFeature sp_feature(); 
+    pr3DPointFeature tdp_feature(sp_feature); //d X / d P
+    prNormalizedImagePointFeature nip_feature(tdp_feature, perspCam); //d x / d X
+    prDigitalImagePointFeature dip_feature(nip_feature, perspCam); //d u / d x
+    prPhotometricnnGMS pnnGM_feature(dip_feature); //d G / d u
+    //pnnGM_feature.getJacobian() internally computes myJacobian * parent_feature.getJacobian(), parent_feature calling itself its own parent feature getJacobian until there is no more ancester
+    */
     //initialisation de l'AV
     prPosePerspectiveEstim<prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
                            prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
