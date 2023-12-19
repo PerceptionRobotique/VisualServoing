@@ -13,10 +13,10 @@
  *
  \author Guillaume CARON
  \version 0.1
- \date September- 2020
+ \date September 2020 ; December 2023
  */
 
-//#define WITHROBOT
+#define WITHROBOT
 #define WITHCAMERA
 
 #ifdef WITHROBOT
@@ -31,9 +31,16 @@
 #include <iostream>
 #include <iomanip>
 
-#include <per/prPerspective.h>
+//#define O
 
+#ifdef O
+#include <per/prOmni.h>
+#include <per/prOmniXML.h>
+#else 
+#include <per/prPerspective.h>
 #include <per/prPerspectiveXML.h>
+#endif
+
 #include <per/prRegularlySampledCPImage.h>
 
 #include <per/prPhotometricnnGMS.h>
@@ -41,7 +48,8 @@
 
 #include <per/prSSDCmp.h>
 
-#include <per/prPosePerspectiveEstim.h>
+//#include <per/prPosePerspectiveEstim.h>
+#include <per/prCameraPoseEstim.h>
 
 #include <visp/vpImage.h>
 #include <visp/vpImageIo.h>
@@ -91,23 +99,30 @@ int main(int argc, char **argv)
 #endif
         return -1;
     }
-    
+
     //Create a camera
-    prSensorModel *perspCam_sensor = new prPerspective();
-    prPerspective *perspCam = (prPerspective *)perspCam_sensor;
+    prSensorModel *_sensor = nullptr;
+#ifdef O
+    _sensor = new prOmni();
+    prOmni *_camera = (prOmni *)_sensor;
 
     // Load the camera parameters from the XML file
-    {
-        prPerspectiveXML fromFile(argv[1]);
-        
-        fromFile >> (*perspCam);
-    }
+    prOmniXML fromFile(argv[1]);
+#else //including P for perspective camera, which is the default
+    _sensor = new prPerspective();
+    prPerspective *_camera = (prPerspective *)_sensor;
+
+    // Load the camera parameters from the XML file
+    prPerspectiveXML fromFile(argv[1]);
+#endif
+
+    fromFile >> (*_camera);
 
 #ifdef VERBOSE
     std::cout << "Loading the XML file to an empty rig..." << std::endl;
 
     // If a sensor is loaded, print its parameters
-    std::cout << "the perspective camera intrinsic parameters are alpha_u = " << perspCam->getau() << " ; alpha_v = " << perspCam->getav() << " ; u_0 = " << perspCam->getu0() << " ; v_0 = " << perspCam->getv0() << std::endl;
+    std::cout << "the camera base intrinsic parameters are alpha_u = " << _camera->getau() << " ; alpha_v = " << _camera->getav() << " ; u_0 = " << _camera->getu0() << " ; v_0 = " << _camera->getv0() << std::endl;
 
 #endif
 
@@ -171,12 +186,12 @@ int main(int argc, char **argv)
 	j_init[5] = vpMath::rad(-0.2);*/
 
   //0.5 m depth
-	j_init[0] = vpMath::rad(-43.63);
-	j_init[1] = vpMath::rad(-109.51);
-	j_init[2] = vpMath::rad(-94.18);
-	j_init[3] = vpMath::rad(-63.91);
-	j_init[4] = vpMath::rad(88.46);
-	j_init[5] = vpMath::rad(92.64);
+	j_init[0] = vpMath::rad(-44.22);
+	j_init[1] = vpMath::rad(-151.17);
+	j_init[2] = vpMath::rad(-99.14);
+	j_init[3] = vpMath::rad(-17.27);
+	j_init[4] = vpMath::rad(88.36);
+	j_init[5] = vpMath::rad(91.60);
 /*
   //0.3 m depth
 	j_init[0] = vpMath::rad(-38.24);
@@ -227,26 +242,34 @@ int main(int argc, char **argv)
 #endif //INDICATORS
 
     // 2. VS objects initialization, considering the pose control of a perspective camera from the feature set of photometric non-normalized Gaussian mixture 2D samples compared thanks to the SSD
-    
+    /*
+    prSensorPoseFeature sp_feature(); 
+    pr3DPointFeature tdp_feature(sp_feature); //d X / d P
+    prNormalizedImagePointFeature nip_feature(tdp_feature, perspCam); //d x / d X
+    prDigitalImagePointFeature dip_feature(nip_feature, perspCam); //d u / d x
+    prPhotometricnnGMS pnnGM_feature(dip_feature); //d G / d u
+    //pnnGM_feature.getJacobian() internally computes myJacobian * parent_feature.getJacobian(), parent_feature calling itself its own parent feature getJacobian until there is no more ancester
+    */
     //initialisation de l'AV
-    prPosePerspectiveEstim<prPhotometricnnGMS<prCartesian2DPointVec>,
-                           prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
-                           prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
+    //prPhotometricnnGMS<prCartesian2DPointVec>,
+    //prPosePerspectiveEstim
+    prCameraPoseEstim<prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
+                      prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
 
     bool dofs[6] = {true, true, true, true, true, true};
     //bool dofs[6] = {true, true, true, false, false, true}; // no coupling?
 
     servo.setdof(dofs[0], dofs[1], dofs[2], dofs[3], dofs[4], dofs[5]);
     
-    perspCam->setPixelRatio(perspCam->getau()/redFac, perspCam->getav()/redFac);
-    perspCam->setPrincipalPoint(perspCam->getu0()/redFac, perspCam->getv0()/redFac);
-    servo.setSensor(perspCam);
+    _camera->setPixelRatio(_camera->getau()/redFac, _camera->getav()/redFac);
+    _camera->setPrincipalPoint(_camera->getu0()/redFac, _camera->getv0()/redFac);
+    servo.setSensor(_camera);
 
     //prepare the desired image 
     prRegularlySampledCPImage<unsigned char> IP_des(I_des.getHeight(), I_des.getWidth()); //the regularly sample planar image to be set from the acquired/loaded perspective image
     IP_des.setInterpType(prInterpType::IMAGEPLANE_BILINEAR);
     std::cout << "build" << std::endl;
-    IP_des.buildFrom(I_des, perspCam); 
+    IP_des.buildFrom(I_des, _camera); 
     std::cout << "built" << std::endl;
 
 //    IP_des.toAbsZN(); //prepare pixels intensities ? 
@@ -264,7 +287,7 @@ int main(int argc, char **argv)
     vpImage<float> PGM_des_f(I_des.getHeight(), I_des.getWidth());
     vpImage<unsigned char> PGM_des_u;
     vpPoseVector pp;
-    fSet_des.sampler.toImage(PGM_des_f, pp, perspCam_sensor);
+    fSet_des.sampler.toImage(PGM_des_f, pp, _sensor);
     vpImageConvert::convert(PGM_des_f, PGM_des_u);
 #endif
 
@@ -286,14 +309,14 @@ int main(int argc, char **argv)
 
     servo.buildFrom(fSet_des);
 
-    servo.initControl(0.2f, 0.5f);
+    servo.initControl(1.0f, 0.5f);
     //servo.initControl(0.2f, 0.3f);
 
     prPhotometricnnGMS<prCartesian2DPointVec> GP_sample(lambda_g);
     std::cout << "nb features : " << fSet_des.set.size() << std::endl;
 
 #ifdef WITHROBOT
-  std::cout << "Deplacement vers pose initiale " << argc << " " << atof(argv[2])/atof(argv[1]) << " " << atof(argv[3])/atof(argv[1]) << std::endl;
+  std::cout << "Deplacement vers pose initiale " << std::endl;
 	vpColVector p_init;
   p_init.resize(6);
 
@@ -373,7 +396,7 @@ int main(int argc, char **argv)
     // Current features set setting from the current image
     prRegularlySampledCPImage<unsigned char> IP_cur(I_des.getHeight(), I_des.getWidth());
     IP_cur.setInterpType(prInterpType::IMAGEPLANE_BILINEAR);
-    IP_cur.buildFrom(I_cur, perspCam); 
+    IP_cur.buildFrom(I_cur, _camera); 
         
     prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage > fSet_cur;
     t0 = vpTime::measureTimeMs();
@@ -384,7 +407,7 @@ int main(int argc, char **argv)
 #if defined(INDICATORS) || defined(OPT_DISP_MAX)
     vpImage<float> PGM_cur_f(I_cur.getHeight(), I_cur.getWidth());
     vpImage<unsigned char> PGM_cur_u;
-    fSet_cur.sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
+    fSet_cur.sampler.toImage(PGM_cur_f, pp, _sensor);
     vpImageConvert::convert(PGM_cur_f, PGM_cur_u);
 #endif
 
@@ -468,9 +491,11 @@ int main(int argc, char **argv)
 #endif
 
     //update current features set
-    IP_cur.buildFrom(I_cur, perspCam); 
-    fSet_cur.updateMeasurement(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler); 
-
+    //std::cout << "build current acquisition model" << std::endl;
+    IP_cur.buildFrom(I_cur, _camera); 
+    //std::cout << "updateMeasurement" << std::endl;
+    fSet_cur.updateMeasurement(IP_cur, GP, GP_sample, poseJacobianCompute, updateSampler);  
+    //std::cout << "control" << std::endl;
     //Compute control vector
     residual = 0.5*servo.control(fSet_cur, v, robust);
 
@@ -498,7 +523,7 @@ int main(int argc, char **argv)
 #endif
 
 #if defined(OPT_DISP_MAX) || defined(INDICATORS)
-    fSet_cur.sampler.toImage(PGM_cur_f, pp, perspCam_sensor);
+    fSet_cur.sampler.toImage(PGM_cur_f, pp, _sensor);
     vpImageConvert::convert(PGM_cur_f, PGM_cur_u);
     vpImageTools::imageDifference(PGM_cur_u,PGM_des_u,PGMdiff) ;
 #endif

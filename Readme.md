@@ -9,10 +9,11 @@ Two kinds of approaches are presented:
 - `PGM` (Photometric Gaussian Mixtures)
 - `MPP` (Mixture of Photometric Potentials)
 
-PGM based visual servoing example is available in two different versions:
+PGM based visual servoing example is available in three different versions:
 
-- `PGM_Perspective_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing
-- `PGM_Perspective_VisualServoing_EyeToHand` which refers to eye-to-hand photometric Gaussian Mixtures-based visual servoing
+- `PGM_Perspective_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing using perspective camera
+- `PGM_Perspective_VisualServoing_EyeToHand` which refers to eye-to-hand photometric Gaussian Mixtures-based visual servoing using perspective camera
+- `PGM_Camera_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing with either perspective, omni, ... camera easily parameterable
 
 ## Dependencies
 
@@ -44,11 +45,13 @@ make -j12
 
 ### PGM-based Visual Servoing
 
-The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an `.xml` file compatible with the libPeR format (download examples here: [2020_PGM_Perspective_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip)).
+The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an `.xml` file compatible with the libPeR format (download examples here: [2020_PGM_Perspective_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip) and [2023_PGM_Omni_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip)).
 
-This method was originally presented in
+This method was originally presented for perspective cameras in
 
 > Crombez, N., Mouaddib, E. M., Caron, G., & Chaumette, F. (2018). Visual servoing with photometric gaussian mixtures as dense features. IEEE Transactions on Robotics, 35(1), 49-63.
+
+The use of the PGM feature for omnidirectional camera is unpublished. 
 
 ### MPP-based Visual Servoing
 

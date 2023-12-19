@@ -340,7 +340,6 @@ int main(int argc, char **argv)
     // 2. VS objects initialization, considering the pose control of a perspective camera from the feature set of photometric non-normalized Gaussian mixture 2D samples compared thanks to the SSD
     
     //initialisation de l'AV
-    //prPhotometricnnGMS<prCartesian2DPointVec>,
     prPosePerspectiveEstim<prFeaturesSet<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec>, prRegularlySampledCPImage >, 
                            prSSDCmp<prCartesian2DPointVec, prPhotometricnnGMS<prCartesian2DPointVec> > > servo;
 
