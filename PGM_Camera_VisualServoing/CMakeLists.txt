@@ -47,7 +47,7 @@ INCLUDE_DIRECTORIES(/opt/spinnaker/include/)
 LINK_DIRECTORIES(/opt/spinnaker/lib/)
 
 set(PGMPerspVS_cpp
-  PGMPerspVS.cpp
+  PGMCameraVS.cpp
   PGMPerspVS_levels.cpp
   PGMPerspVS_test.cpp
 )
@@ -69,12 +69,12 @@ foreach(cpp ${PGMPerspVS_cpp})
 endforeach()
 
 #IF USE UR10 AND/OR FLIR
-target_sources(PGMPerspVS PUBLIC ${SRC_SOURCES})
+target_sources(PGMCameraVS PUBLIC ${SRC_SOURCES})
 #IF USE UR10
-target_link_libraries(PGMPerspVS ur_rtde::rtde)
+target_link_libraries(PGMCameraVS ur_rtde::rtde)
 #IF USE FLIR
 #target_link_libraries(PGMPerspVS -lflycapture)
-target_link_libraries(PGMPerspVS -lSpinnaker)
+target_link_libraries(PGMCameraVS -lSpinnaker)
 
 #IF USE UR10 AND/OR FLIR
 target_sources(PGMPerspVS_levels PUBLIC ${SRC_SOURCES})

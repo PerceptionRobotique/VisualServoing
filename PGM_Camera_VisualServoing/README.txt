@@ -28,7 +28,7 @@
 3. open the project in build or use make in the latter directory to build the exe file
 4. run the program from the command line...:
 
-./build/Release/PGMPerspectiveVisualServoing ./PGM_Perspective_VisualServoing_media/calibration/calib.xml 4 0.325 ./PGM_Perspective_VisualServoing_media/images_resize4/maskFull.png
+./build/Release/PGMCameraVS ./PGM_Perspective_VisualServoing_media/calibration/calib.xml 4 0.325 ./PGM_Perspective_VisualServoing_media/images_resize4/maskFull.png
 
 that are, in the reading order:
 - the camera calibration xml file
@@ -37,6 +37,7 @@ that are, in the reading order:
 - the image file of the mask (white pixels are to be considered whereas black pixels are not)
 
 Sample calibration and mask files are provided in the "PGM_Perspective_VisualServoing_media" archive to be downloaded from here: http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip 
+or: http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip
 
-Note: on going (maybe validated with libPeR-0.0.3)
+Note: validated with libPeR-0.3.0 (PGMPerspVS_levels and PGMPerspVS_test still need to be updated)
 
