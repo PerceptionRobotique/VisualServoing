@@ -32,10 +32,14 @@
 #include <iomanip>
 
 //#define O
+#define E
 
 #ifdef O
 #include <per/prOmni.h>
 #include <per/prOmniXML.h>
+#elif defined(E)
+#include <per/prEquirectangular.h>
+#include <per/prEquirectangularXML.h>
 #else 
 #include <per/prPerspective.h>
 #include <per/prPerspectiveXML.h>
@@ -108,6 +112,12 @@ int main(int argc, char **argv)
 
     // Load the camera parameters from the XML file
     prOmniXML fromFile(argv[1]);
+#elif defined(E)
+    _sensor = new prEquirectangular();
+    prEquirectangular *_camera = (prEquirectangular *)_sensor;
+
+    // Load the camera parameters from the XML file
+    prEquirectangularXML fromFile(argv[1]);
 #else //including P for perspective camera, which is the default
     _sensor = new prPerspective();
     prPerspective *_camera = (prPerspective *)_sensor;
