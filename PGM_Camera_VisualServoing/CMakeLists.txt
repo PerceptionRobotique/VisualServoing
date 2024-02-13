@@ -32,55 +32,99 @@ if(PER_FOUND)
 	include(${PER_USE_FILE})
 endif(PER_FOUND)
 
-# ViSP (to do: list modules only)
-find_package(VISP REQUIRED)
+# ViSP
+find_package(VISP REQUIRED  visp_core visp_robot visp_visual_features visp_io visp_gui visp_vs visp_vision)
 if(VISP_FOUND)
 	include(${VISP_USE_FILE})
 endif(VISP_FOUND)
 
-#IF USE UR10
-find_package(ur_rtde REQUIRED)
+if(${USE_UR})
+	find_package(ur_rtde REQUIRED)
+endif()
 
-#IF USE FLIR
-#INCLUDE_DIRECTORIES(/usr/include/flycapture)
-INCLUDE_DIRECTORIES(/opt/spinnaker/include/)
-LINK_DIRECTORIES(/opt/spinnaker/lib/)
+#for linking with libav
+if(${USE_THETA})
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+        libavdevice
+        libavfilter
+        libavformat
+        libavcodec
+        libswresample
+        libswscale
+        libavutil
+        )
+
+  #IF USE UVC Theta X
+  INCLUDE_DIRECTORIES(${UVCTHETA_DIR}/include)
+  LINK_DIRECTORIES(${UVCTHETA_DIR})
+endif()
+
+#for compiling and linking with Flir
+if(${USE_FLIR})
+  #INCLUDE_DIRECTORIES(/usr/include/flycapture)
+	INCLUDE_DIRECTORIES(/opt/spinnaker/include/)
+	LINK_DIRECTORIES(/opt/spinnaker/lib/)
+endif()
+
 
 set(PGMPerspVS_cpp
-  PGMCameraVS.cpp
-  PGMPerspVS_levels.cpp
-  PGMPerspVS_test.cpp
+  PGMCameraVS
+  PGMPerspVS_levels
+  PGMPerspVS_test
 )
 
-SET (SRC_SOURCES
-#IF USE UR10
-		src/C_UR.h
-		src/C_UR.cpp
-#IF USE FLIR
-#    src/CamFlir.hpp
-    src/CamFlirSpinnaker.hpp
-)
+if(${USE_THETA})
+	if(${USE_UR})
+    SET (SRC_SOURCES
+        src/CamUVCtheta.hpp
+        src/thirdparty/libuvc-theta-sample/thetauvc.c
+        src/thirdparty/insta360-crombez/videoDecoder.cpp
+
+    		src/C_UR.h
+		    src/C_UR.cpp)
+  else()
+    SET (SRC_SOURCES
+        src/CamUVCtheta.hpp
+        src/thirdparty/libuvc-theta-sample/thetauvc.c
+        src/thirdparty/insta360-crombez/videoDecoder.cpp)
+  endif()
+endif()
+
+if(${USE_FLIR})
+	if(${USE_UR})
+    SET (SRC_SOURCES
+#       src/CamFlir.hpp
+        src/CamFlirSpinnaker.hpp
+
+    		src/C_UR.h
+		    src/C_UR.cpp)
+  else()
+    SET (SRC_SOURCES
+#       src/CamFlir.hpp
+        src/CamFlirSpinnaker.hpp)
+  endif()
+endif()
 
 foreach(cpp ${PGMPerspVS_cpp})
-  per_add_target(${cpp})
-  if(COMMAND pr_add_dependency)
-    pr_add_dependency(${cpp} "PGMPerspVS")
+  # target 
+	add_executable(${cpp} ${cpp}.cpp ${SRC_SOURCES})
+
+  if(${USE_UR})
+    target_link_libraries(${cpp} ur_rtde::rtde)
   endif()
+
+  if(${USE_FLIR})
+    #target_link_libraries(${cpp} -lflycapture)
+    target_link_libraries(${cpp} -lSpinnaker)
+  endif()
+
+  if(${USE_THETA})
+    target_link_libraries(${cpp} -luvc PkgConfig::LIBAV)
+  endif()
+
 endforeach()
 
-#IF USE UR10 AND/OR FLIR
-target_sources(PGMCameraVS PUBLIC ${SRC_SOURCES})
-#IF USE UR10
-target_link_libraries(PGMCameraVS ur_rtde::rtde)
-#IF USE FLIR
-#target_link_libraries(PGMPerspVS -lflycapture)
-target_link_libraries(PGMCameraVS -lSpinnaker)
-
-#IF USE UR10 AND/OR FLIR
-target_sources(PGMPerspVS_levels PUBLIC ${SRC_SOURCES})
-#IF USE UR10
-target_link_libraries(PGMPerspVS_levels ur_rtde::rtde)
-#IF USE FLIR
-#target_link_libraries(PGMPerspVS_levels -lflycapture)
-target_link_libraries(PGMPerspVS_levels -lSpinnaker)
-
+SET(USE_THETA FALSE CACHE BOOL "Sets the use of Theta X camera" FORCE)
+SET(USE_FLIR FALSE CACHE BOOL "Sets the use of FLIR camera" FORCE)
+SET(USE_UR FALSE CACHE BOOL "Sets the use of UR robot" FORCE)

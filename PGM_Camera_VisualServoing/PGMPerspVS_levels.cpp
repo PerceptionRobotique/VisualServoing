@@ -21,7 +21,7 @@ or
  */
 
 #define WITHROBOT
-#define WITHCAMERA
+//#define WITHCAMERA
 
 #ifdef WITHROBOT
   #include "src/C_UR.h"

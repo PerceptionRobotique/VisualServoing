@@ -13,19 +13,26 @@
  *
  \author Guillaume CARON
  \version 0.1
- \date September 2020 ; December 2023
+ \date September 2020 ; December 2023 (camera genericity, applied to prOmni) ; February 2024 (prEqui)
  */
 
-#define WITHROBOT
+//#define WITHROBOT
 #define WITHCAMERA
+
+//#define WITHFLIRCAM
+#define WITHUVCTHETA
 
 #ifdef WITHROBOT
   #include "src/C_UR.h"
 #endif
 
 #ifdef WITHCAMERA
+  #ifdef WITHFLIRCAM
 //  #include "src/CamFlir.hpp"
-  #include "src/CamFlirSpinnaker.hpp"
+    #include "src/CamFlirSpinnaker.hpp"
+  #elif defined(WITHUVCTHETA)
+    #include "src/CamUVCtheta.hpp"
+  #endif
 #endif
 
 #include <iostream>
@@ -132,7 +139,7 @@ int main(int argc, char **argv)
     std::cout << "Loading the XML file to an empty rig..." << std::endl;
 
     // If a sensor is loaded, print its parameters
-    std::cout << "the camera base intrinsic parameters are alpha_u = " << _camera->getau() << " ; alpha_v = " << _camera->getav() << " ; u_0 = " << _camera->getu0() << " ; v_0 = " << _camera->getv0() << std::endl;
+    std::cout << "type " << _camera->getType() << " camera base intrinsic parameters are alpha_u = " << _camera->getau() << " ; alpha_v = " << _camera->getav() << " ; u_0 = " << _camera->getu0() << " ; v_0 = " << _camera->getv0() << std::endl;
 
 #endif
 
@@ -194,7 +201,7 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-140.45);
 	j_init[4] = vpMath::rad(-44.99);
 	j_init[5] = vpMath::rad(-0.2);*/
-
+/*
   //0.5 m depth
 	j_init[0] = vpMath::rad(-44.22);
 	j_init[1] = vpMath::rad(-151.17);
@@ -202,6 +209,23 @@ int main(int argc, char **argv)
 	j_init[3] = vpMath::rad(-17.27);
 	j_init[4] = vpMath::rad(88.36);
 	j_init[5] = vpMath::rad(91.60);
+*/
+  //to the sky and wall
+	j_init[0] = vpMath::rad(16.52);
+	j_init[1] = vpMath::rad(-56.24);
+	j_init[2] = vpMath::rad(-118.27);
+	j_init[3] = vpMath::rad(-67.21);
+	j_init[4] = vpMath::rad(84.13);
+	j_init[5] = vpMath::rad(96.01);
+  
+  /*
+  j_init[0] = vpMath::rad(13.57);
+	j_init[1] = vpMath::rad(-74.55);
+	j_init[2] = vpMath::rad(-130.63);
+	j_init[3] = vpMath::rad(36.28);
+	j_init[4] = vpMath::rad(85.43);
+	j_init[5] = vpMath::rad(93.26);
+  */
 /*
   //0.3 m depth
 	j_init[0] = vpMath::rad(-38.24);
@@ -220,12 +244,20 @@ int main(int argc, char **argv)
 #ifdef WITHCAMERA
     vpImage<unsigned char> Iacq;
 
-    //Parametres intrinseques pour FlirCam
-	  int larg = 640/redFac, haut = 512/redFac;
+    #ifdef WITHFLIRCAM
+      //Parametres intrinseques pour FlirCam
+	    int larg = 640/redFac, haut = 512/redFac;
 
-    CamFlirSpinnaker<unsigned char> grabber(larg,haut,8,0); 
-   
+      CamFlirSpinnaker<unsigned char> grabber(larg,haut,8,0); 
+    #elif defined(WITHUVCTHETA)
+      //Parametres intrinseques pour UVC Theta X FHD
+	    int larg = 1920/redFac, haut = 960/redFac;
+
+      CamUVCtheta<unsigned char> grabber(larg,haut,8,0); 
+    #endif
+   vpTime::wait(1000);
     //Acquisition
+    for(int iac=0;iac<10;iac++)
     grabber.getFrame(Iacq);
 
     vpImageTools::resize(Iacq, I_des, larg, haut, vpImageTools::vpImageInterpolationType::INTERPOLATION_CUBIC);//INTERPOLATION_LINEAR);//
@@ -555,6 +587,8 @@ int main(int argc, char **argv)
 #endif
     duree = vpTime::measureTimeMs() - tms;
     std::cout << "duration : " << duree <<std::endl;
+
+    //vpDisplay::getClick(I_cur);
 
 #ifdef INDICATORS
     v_p.push_back(p);

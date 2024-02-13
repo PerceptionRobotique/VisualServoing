@@ -13,13 +13,13 @@ PGM based visual servoing example is available in three different versions:
 
 - `PGM_Perspective_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing using perspective camera
 - `PGM_Perspective_VisualServoing_EyeToHand` which refers to eye-to-hand photometric Gaussian Mixtures-based visual servoing using perspective camera
-- `PGM_Camera_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing with either perspective, omni, ... camera easily parameterable
+- `PGM_Camera_VisualServoing` which refers to eye-in-hand photometric Gaussian Mixtures-based visual servoing with either perspective, omni, equirectangular, ... camera easily parameterable
 
 ## Dependencies
 
 ### Robots and cameras
 
-- `PGM` visual servoing example relies on an `UR10` robot and a `Flir` camera. The corresponding libraries are built directly with the project via api calls to corresponding hardware libraries.
+- `PGM` visual servoing example relies on an `UR10` robot and a camera among `Flir` and `Theta X` cameras. The corresponding libraries are built directly with the project via api calls to corresponding hardware libraries.
 - `MPP` visual servoing example relies on a `Franka Emika Panda` robot and a `Kodak Pixpro` camera. The user needs to install the `libFranka` library (see [the dedicated install page](https://frankaemika.github.io/docs/installation_linux.html)). On the other hand, the `Kodak` camera is controlled through the `OpenCV` library via basic camera handling.
 
 ### Visual Servoing dependencies
@@ -43,15 +43,20 @@ cmake ..
 make -j12
 ```
 
+For the `PGM_Camera_VisualServoing` programs, the `cmake` command can use additional parameters (add `-D USE_UR=True` to use UR robot classes, `-D USE_THETA=True` to use Theta X camera classes, `-D USE_FLIR=True` to use Flir camera classes. For the moment only combinations of THETA+UR or FLIR+UR are possible.):
+```
+cmake path/to/source/dir -DCMAKE_BUILD_TYPE=Release -DPER_DIR=/path/to/libPeR/install/dir -D USE_UR=True -D USE_THETA=True
+```
+
 ### PGM-based Visual Servoing
 
-The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an `.xml` file compatible with the libPeR format (download examples here: [2020_PGM_Perspective_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip) and [2023_PGM_Omni_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip)).
+The programs are able to perform the servoing on images of a perspective camera, whose intrinsic parameters are described in an `.xml` file compatible with the libPeR format (download examples here: [2020_PGM_Perspective_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip), [2023_PGM_Omni_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip)), [2024_PGM_Equi_VisualServoing_media](http://mis.u-picardie.fr/~g-caron/data/PeR/2024_PGM_Equi_VisualServoing_media.zip)).
 
 This method was originally presented for perspective cameras in
 
 > Crombez, N., Mouaddib, E. M., Caron, G., & Chaumette, F. (2018). Visual servoing with photometric gaussian mixtures as dense features. IEEE Transactions on Robotics, 35(1), 49-63.
 
-The use of the PGM feature for omnidirectional camera is unpublished. 
+The use of the PGM feature for omnidirectional and equicamera is unpublished. 
 
 ### MPP-based Visual Servoing
 

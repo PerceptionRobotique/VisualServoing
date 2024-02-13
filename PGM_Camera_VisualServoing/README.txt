@@ -22,9 +22,10 @@
 #
 #############################################################################
 
-1. create a new directory named build in PGM_Perspective_VisualServoing
-2. use cmake to fill the build directory
-3. update the program to match your image acquisition tool
+0. create a new directory named build in PGM_Perspective_VisualServoing
+1. use cmake (twice) to fill the build directory in, from command line (add `-D USE_UR=True` to use UR robot classes, `-D USE_THETA=True` to use Theta X camera classes, `-D USE_FLIR=True` to use Flir camera classes. Note: for the moment only combinations of THETA+UR or FLIR+UR are possible.): 
+	- in the build directory: `cmake path/to/source/dir -DCMAKE_BUILD_TYPE=Release -DPER_DIR=/path/to/libPeR/install/dir -D USE_UR=True -D USE_THETA=True`
+2. update the program to match your image acquisition tool (in case you use a Ricoh Theta X: `https://codetricity.github.io/theta-linux/`)
 3. open the project in build or use make in the latter directory to build the exe file
 4. run the program from the command line...:
 
@@ -36,8 +37,8 @@ that are, in the reading order:
 - the initial Gaussian expansion parameter
 - the image file of the mask (white pixels are to be considered whereas black pixels are not)
 
-Sample calibration and mask files are provided in the "PGM_Perspective_VisualServoing_media" archive to be downloaded from here: http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip 
-or: http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip
+Sample calibration and mask files are provided in the "PGM_Perspective_VisualServoing_media" archive to be downloaded from here: http://mis.u-picardie.fr/~g-caron/data/PeR/2020_PGM_Perspective_VisualServoing_media.zip, 
+or: http://mis.u-picardie.fr/~g-caron/data/PeR/2023_PGM_Omni_VisualServoing_media.zip, or: http://mis.u-picardie.fr/~g-caron/data/PeR/2024_PGM_Equi_VisualServoing_media.zip
 
 Note: validated with libPeR-0.3.0 (PGMPerspVS_levels and PGMPerspVS_test still need to be updated)
 
