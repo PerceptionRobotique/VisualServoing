@@ -47,7 +47,7 @@
 #elif defined(E)
 #include <per/prEquirectangular.h>
 #include <per/prEquirectangularXML.h>
-#else 
+#else //P
 #include <per/prPerspective.h>
 #include <per/prPerspectiveXML.h>
 #endif
