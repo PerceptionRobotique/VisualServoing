@@ -16,7 +16,7 @@
  \date September 2020 ; December 2023 (camera genericity, applied to prOmni) ; February 2024 (prEqui)
  */
 
-//#define WITHROBOT
+#define WITHROBOT
 #define WITHCAMERA
 
 //#define WITHFLIRCAM
