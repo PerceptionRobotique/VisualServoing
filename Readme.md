@@ -69,7 +69,7 @@ A `bash` example can be found in the `MPP` directory to launch the Visual Servoi
 ## Credits
 
 ```text
-Copyright (C) 2017-2023 by MIS lab (UPJV). All rights reserved.
+Copyright (C) 2017-2024 by MIS lab (UPJV). All rights reserved.
 
 See http://mis.u-picardie.fr/~g-caron/fr/index.php?page=7 for more information.
 
@@ -90,6 +90,6 @@ WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 Description:
 Insight about how to set the project and build the program
 Authors:
-Guillaume CARON
+Guillaume CARON, Antoine ANDRE
 
 ```
